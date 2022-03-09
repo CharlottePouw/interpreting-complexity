@@ -218,7 +218,12 @@ def finetune_sentence_level(args):
     if args.folds > 1:
         evaluate_kfold(args, data_silo, processor)
     else:
-        adapt_model = train_on_split(args, data_silo, processor)
+        if not args.do_eval_only:
+            adapt_model = train_on_split(args, data_silo, processor)
+        else:
+            adapt_model = CustomAdaptiveModel.load(f"{args.model_name}", device=args.device)
+            adapt_model.connect_heads_with_processor(data_silo.processor.tasks, require_labels=True)
+
         evaluator_test = MultitaskEvaluator(
             data_loader=data_silo.get_data_loader("test"), tasks=data_silo.processor.tasks, device=args.device
         )
@@ -347,7 +352,7 @@ def main():
         choices=["regression", "classification"],
         type=str,
         default=None,
-        required=True,
+        #required=True,
         help="Specifies the training mode. Choices: %(choices)s",
     )
     parser.add_argument(
